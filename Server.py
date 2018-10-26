@@ -1,6 +1,6 @@
 #Importing Packages
 
-import argparse
+from tkinter import *
 import requests
 import json
 import os
@@ -8,16 +8,14 @@ import math
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 
-CHUNK_SIZE = 4096
+fields = ('URL', 'Clients')
 
-clients = {}
-addresses = {}
+#http://mirrors.standaloneinstaller.com/video-sample/lion-sample.mp4
 
-
-def accept_incoming_connections(start, end, url_of_file, file_name):
+def accept_incoming_connections(start, end, url_of_file, file_name, output):
     """Sets up handling for incoming clients."""
     client, client_address = SERVER.accept()
-    print("%s:%s has connected." % client_address)
+    output.insert(END, "%s:%s has connected." % client_address)
     addresses[client] = client_address
     data = json.dumps({"start": start, "end": end, "url": url_of_file, "filename": file_name})
     client.send(data.encode())
@@ -44,36 +42,9 @@ def accept_incoming_connections(start, end, url_of_file, file_name):
         f.close()
 
 
-HOST = ''
-PORT = 3300
-ADDR = (HOST, PORT)
-
-SERVER = socket(AF_INET, SOCK_STREAM)
-SERVER.bind(ADDR)
-
-if __name__ == "__main__":
-    SERVER.listen(5)
-    #url_of_file = "https://homepages.cae.wisc.edu/~ece533/images/cat.png"
-    #url_of_file = "http://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_640_3MG.mp4"
-
-    # create a parser object
-    parser = argparse.ArgumentParser(description="An app for Parallel and Distributed Download over multiple devices")
-
-    # add argument
-
-    parser.add_argument("-n", "--client", type=int, nargs=1, default=1,
-                        help="Number of clients. Default is 2")
-
-    parser.add_argument("-u", "--url", type=str, nargs=1, default=None,
-                        help="Url of the file to be downloaded.", required=True)
-
-    # parse the arguments from standard input
-    args = parser.parse_args()
-    number_of_client = args.client
-    number_of_client = number_of_client[0]
-    url_of_file = args.url
-    url_of_file = url_of_file[0]
-
+def threads(e, output):
+    url_of_file = str(e['URL'].get())
+    number_of_client = int(e['Clients'].get())
     file_name = url_of_file.split('/')[-1]
     i = 1
     while os.path.isfile(file_name):
@@ -82,24 +53,104 @@ if __name__ == "__main__":
 
     r = requests.head(url_of_file)
     file_size = int(r.headers['content-length'])
+    output.insert(END, number_of_client)
     try:
         file_size = int(r.headers['content-length'])
     except:
-        print("Invalid URL")
+        output.insert(END, "Invalid URL")
     part = math.floor(int(file_size) / number_of_client)
     threads = []
-    for i in range(number_of_client):
+    for i in range(0, number_of_client):
         start = part * i
         end = start + part
         if i == number_of_client:
             end = file_size
-        ACCEPT_THREAD = Thread(target=accept_incoming_connections, kwargs={'start': start, 'end': end, 'url_of_file': url_of_file, 'file_name': file_name}).start()
-        threads.append(ACCEPT_THREAD)
-
-    print("Waiting for Downloading...")
-    i = math.floor(100 / len(threads))
+        accept_thread = Thread(target=accept_incoming_connections,
+                               kwargs={'start': start, 'end': end, 'url_of_file': url_of_file,
+                                       'file_name': file_name, 'output': output}).start()
+        threads.append(accept_thread)
+    output.insert(END, "Waiting for Downloading...")
+    j = 0
     for t in threads:
         t.join()
-        print((int(i/2)*"#")+str(i)+"%"+(int(i/2)*"#"))
-        i += i
+        j = j + 1
+        if len(threads) == j:
+            output.insert(END, "File Downloaded")
+            SERVER.close()
     SERVER.close()
+
+
+def makeform(root, fields):
+    entries = {}
+    for field in fields:
+        row = Frame(root)
+        lab = Label(row, width=22, text=field+": ", anchor='w')
+        ent = Entry(row)
+        row.pack(side=TOP, fill=X, padx=5, pady=5)
+        lab.pack(side=LEFT)
+        ent.pack(side=RIGHT, expand=YES, fill=X)
+        entries[field] = ent
+    entries['URL'].insert(0, "http://mirrors.standaloneinstaller.com/video-sample/lion-sample.mp4")
+    entries['Clients'].insert(0, "1")
+    return entries
+
+
+def GUI():
+    # Tk module started
+    win = Tk()
+
+    # Different Frame initiated
+    topFrame = Frame(win)
+    topFrame.pack()
+    midFrame = Frame(win)
+    midFrame.pack()
+    bottFrame = Frame(win)
+    bottFrame.pack()
+
+    # Title and Geometry of GUI
+    win.title("Pardow Server")
+    win.geometry("350x350+30+30")
+
+    # Top bar Menu
+    menu = Menu(win)
+    win.config(menu=menu)
+    filemenu = Menu(menu)
+    menu.add_cascade(label='File', menu=filemenu)
+    filemenu.add_command(label='New')
+    filemenu.add_command(label='Open...')
+    filemenu.add_separator()
+    filemenu.add_command(label='Exit', command=win.quit)
+    helpmenu = Menu(menu)
+    menu.add_cascade(label='Help', menu=helpmenu)
+    helpmenu.add_command(label='About')
+
+    # Making the entry form
+    ents = makeform(topFrame, fields)
+
+    # Output Area
+    scrollbar = Scrollbar(bottFrame)
+    output = Listbox(bottFrame, height=15, width=50, yscrollcommand=scrollbar.set)
+    output.pack(side=LEFT, fill=BOTH)
+    scrollbar.pack(side=RIGHT, fill=Y)
+
+    # Go and Close button
+    b1 = Button(midFrame, text='Go', command=(lambda e=ents: threads(e, output)))
+    b1.pack(side=LEFT, padx=5, pady=5)
+    b3 = Button(midFrame, text='Quit', command=win.quit)
+    b3.pack(side=LEFT, padx=5, pady=5)
+    win.bind('<Return>', (lambda event, e=ents: threads(e, output)))
+    win.mainloop()
+
+
+if __name__ == "__main__":
+    # Defining the Port, host and chunk size
+    HOST = ''
+    PORT = 3300
+    ADDR = (HOST, PORT)
+    SERVER = socket(AF_INET, SOCK_STREAM)
+    SERVER.bind(ADDR)
+    CHUNK_SIZE = 4096
+    clients = {}
+    addresses = {}
+    SERVER.listen(5)
+    GUI()

@@ -1,17 +1,14 @@
-"""Script for Tkinter GUI chat client."""
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
-#import tkinter
+from tkinter import *
 import math
 import json
 import requests
 
-
-CHUNK_SIZE = 4096
-number_of_threads = 4
+fields = ('Host', 'Port')
 
 
-def Handler(start, end, url, filename, startServer):
+def Handler(start, end, url, filename, startServer, output):
     # specify the starting and ending of the file
     headers = {'Range': 'bytes=%d-%d' % (start, end)}
     # Requesting the file from server
@@ -20,19 +17,20 @@ def Handler(start, end, url, filename, startServer):
     if reqfile.status_code == 206:
         # Saving the content inside the file
         with open(filename, 'r+b') as f:
-            print("Start after passing" + str(start))
-            print("End after passing" + str(end))
-            print("StartServer after passing" + str(startServer))
-            seek = start-startServer
-            print(seek)
+            seek = int(start-startServer)
             f.seek(seek)
             f.write(reqfile.content)
     else:
-        print("Download in parts not Supported")
+        output.insert(END, "Download in parts not Supported")
 
 
-def clientReceive():
+def threads(e, output):
     # Receiving the details from Server
+    addr = (e['Host'].get(), int(e['Port'].get()))
+
+    client_socket = socket(AF_INET, SOCK_STREAM)
+    client_socket.connect(addr)
+
     data = client_socket.recv(CHUNK_SIZE)
     # Decoding the JSON file
     data = json.loads(data.decode())
@@ -41,21 +39,21 @@ def clientReceive():
     url_of_file = data.get("url")
     file_name = data.get("filename")
     file_size = int(endServer)-int(startServer)
-    print(file_size)
+    output.insert(END, str(round(file_size/(1024*1024), 3))+"MB")
     fp = open(file_name, "wb")
     fp.write(('\0' * file_size).encode())
     fp.close()
-
+    # Defining the number of threads
+    number_of_threads = 4
     threads = []
-    part = math.floor(file_size) / number_of_threads
+    part = math.floor(file_size / number_of_threads)
     start = startServer
     end = start + part
-    print(startServer)
     for i in range(number_of_threads):
         # Passing the arguments and creating a Thread
-        print("Start before passing"+str(start))
-        print("End before passing"+str(end))
-        t = Thread(target=Handler, kwargs={'start': start, 'end': end, 'url': url_of_file, 'filename': file_name, 'startServer': startServer})
+        t = Thread(target=Handler, kwargs={'start': start,
+                                           'end': end, 'url': url_of_file, 'filename': file_name,
+                                           'startServer': startServer, 'output': output})
         t.setDaemon(True)
         t.start()
         threads.append(t)
@@ -63,74 +61,89 @@ def clientReceive():
         end = start + part
         if i == number_of_threads-2:
             end = endServer
-
+    i = 0
     for t in threads:
         t.join()
+        i = i + 1
+        if len(threads) == i:
+            break
 
-    print('%s downloaded' % file_name)
-    print('Sending the file to the server!')
+
+    output.insert(END, '%s downloaded' % file_name)
+    output.insert(END, 'Sending the file to the server!')
     with open(file_name, 'rb') as f:
         data = f.read(CHUNK_SIZE)
         while data:
             client_socket.send(data)
             data = f.read(CHUNK_SIZE)
-    print("File send to the server!")
+    output.insert(END, "File send to the server!")
+    client_socket.close()
 
 
-# def send(event=None):  # event is passed by binders.
-#     """Handles sending of messages."""
-#     msg = my_msg.get()
-#     my_msg.set("")  # Clears input field.
-#     client_socket.send(bytes(msg, "utf8"))
-#     if msg == "{quit}":
-#         client_socket.close()
-#         top.quit()
-#
-#
-# def on_closing(event=None):
-#     """This function is to be called when the window is closed."""
-#     my_msg.set("{quit}")
-#     send()
+def makeform(root, fields):
+    entries = {}
+    for field in fields:
+        row = Frame(root)
+        lab = Label(row, width=22, text=field+": ", anchor='w')
+        ent = Entry(row)
+        row.pack(side=TOP, fill=X, padx=5, pady=5)
+        lab.pack(side=LEFT)
+        ent.pack(side=RIGHT, expand=YES, fill=X)
+        entries[field] = ent
+    entries['Host'].insert(0, "127.0.0.1")
+    entries['Port'].insert(0, "3300")
+    return entries
 
-# top = tkinter.Tk()
-# top.title("Parallel Downloader")
-#
-# messages_frame = tkinter.Frame(top)
-# my_msg = tkinter.StringVar()  # For the messages to be sent.
-# my_msg.set("Type your messages here.")
-# scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
-# # Following will contain the messages.
-# msg_list = tkinter.Listbox(messages_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-# scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-# msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-# msg_list.pack()
-# messages_frame.pack()
-#
-# entry_field = tkinter.Entry(top, textvariable=my_msg)
-# entry_field.bind("<Return>", send)
-# entry_field.pack()
-# send_button = tkinter.Button(top, text="Send", command=send)
-# send_button.pack()
-#
-# top.protocol("WM_DELETE_WINDOW", on_closing)
 
-#----Now comes the sockets part----
-#HOST = input('Enter host: ')
-#PORT = input('Enter port: ')
+def GUI():
+    # Tk module started
+    win = Tk()
 
-HOST = "127.0.0.1"
-PORT = 3300
-if not PORT:
-    PORT = 3300
-else:
-    PORT = int(PORT)
+    # Different Frame initiated
+    topFrame = Frame(win)
+    topFrame.pack()
+    midFrame = Frame(win)
+    midFrame.pack()
+    bottFrame = Frame(win)
+    bottFrame.pack()
 
-BUFSIZ = 4096
-ADDR = (HOST, PORT)
+    # Title and Geometry of GUI
+    win.title("Pardow Client")
+    win.geometry("350x350+30+30")
 
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDR)
+    # Top bar Menu
+    menu = Menu(win)
+    win.config(menu=menu)
+    filemenu = Menu(menu)
+    menu.add_cascade(label='File', menu=filemenu)
+    filemenu.add_command(label='New')
+    filemenu.add_command(label='Open...')
+    filemenu.add_separator()
+    filemenu.add_command(label='Exit', command=win.quit)
+    helpmenu = Menu(menu)
+    menu.add_cascade(label='Help', menu=helpmenu)
+    helpmenu.add_command(label='About')
 
-receive_thread = Thread(target=clientReceive())
-receive_thread.start()
-receive_thread.join()
+    # Making the entry form
+    ents = makeform(topFrame, fields)
+
+    # Output Area
+    scrollbar = Scrollbar(bottFrame)
+    output = Listbox(bottFrame, height=15, width=50, yscrollcommand=scrollbar.set)
+    output.pack(side=LEFT, fill=BOTH)
+    scrollbar.pack(side=RIGHT, fill=Y)
+
+    # Go and Close button
+    b1 = Button(midFrame, text='Go', command=(lambda e=ents: threads(e, output)))
+    b1.pack(side=LEFT, padx=5, pady=5)
+    b3 = Button(midFrame, text='Quit', command=win.quit)
+    b3.pack(side=LEFT, padx=5, pady=5)
+    win.bind('<Return>', (lambda event, e=ents: threads(e, output)))
+
+    win.mainloop()
+
+
+if __name__ == "__main__":
+    # Defining the chunk size
+    CHUNK_SIZE = 4096
+    GUI()
