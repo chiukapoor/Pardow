@@ -19,18 +19,17 @@ Client nodes will download the parts they are assigned through threading to crea
 1. The server will first create a thread to for incoming requests of clients.
 2. As soon as the client is connected the server will notify in the GUI
 
-
-![Pardow Server](https://github.com/C-Society/Pardow/blob/master/Misc/Pardow_Server_img.jpg)
-
+<p align="center">
+<img src="https://github.com/C-Society/Pardow/blob/master/Misc/Pardow_Server_img.jpg" width="600" alt="Pardow Server">
+</p>
 
 3. The Client will start Downloading the file
 4. When the file is Downloaded the client will send the file to the server
 5. The server will combine all the files into one file
 
-
-![Pardow Client](https://github.com/C-Society/Pardow/blob/master/Misc/Pardow_Client_img.jpg)
-
-
+<p align="center">
+<img src="https://github.com/C-Society/Pardow/blob/master/Misc/Pardow_Client_img.jpg" width="600" alt="Pardow Client">
+</p>
 
 ## Built With
 
