@@ -4,7 +4,7 @@ Pradow is an Open Source project available for everyone to download and use with
 
 Using the Algorithm for Distributed Computing to distribute the download parts among different PCs and latter using threads to download it Parallel in the same PC. This will increase the bandwidth usage efficiency and decrease the downloading time. Normally downloading a 3 GB file on VIT Internet which provides the speed of 300KBps Approximately takes 3 hours. If using the technique provided in the project the time taken be brought down to 2 hours including file compilation then the project can be supposed to achieve the specified objectives. Additionally, as a student is allowed to use a maximum of 10 GB per month. Multiple accounts can be used to download the 3 GB file which will at last also help in Data Usage Distribution.
 
-### Project Modules:
+## Project Modules:
 
 The project has two major parts.
 1. Server Node
@@ -14,7 +14,7 @@ Server node will be the one which is responsible for segmenting the files and se
 
 Client nodes will download the parts they are assigned through threading to create multiple connection and download in parallel acting as different devices on its own. This increase the overall download speed. Increase in the number of client nodes will drastically affect the increase in downloading speed. The methodlogy used is a segmented file transfer and threading.
 
-### Working of Pardow
+## Working of Pardow
 
 1. The server will first create a thread to for incoming requests of clients.
 2. As soon as the client is connected the server will notify in the GUI
@@ -30,6 +30,10 @@ Client nodes will download the parts they are assigned through threading to crea
 <p align="center">
 <img src="https://github.com/C-Society/Pardow/blob/master/Misc/Pardow_Client_img.jpg" width="600" alt="Pardow Client">
 </p>
+
+## Versions
+
+The Pardow is available in both CLI and GUI version .
 
 ## Built With
 
