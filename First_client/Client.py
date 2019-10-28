@@ -139,8 +139,11 @@ def GUI():
     b3 = Button(midFrame, text='Quit', command=win.quit)
     b3.pack(side=LEFT, padx=5, pady=5)
     win.bind('<Return>', (lambda event, e=ents: threads(e, output)))
-
-    win.mainloop()
+    
+    #Run mainloop in Thread
+    thread = Thread(target=win.mainloop, args=())
+    thread.daemon = True                            # Daemonize thread
+    thread.start()                                  # Start the execution
 
 
 if __name__ == "__main__":
