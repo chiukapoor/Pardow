@@ -12,7 +12,7 @@ The project has two major parts.
 
 Server node will be the one which is responsible for segmenting the files and sending it to the client nodes for downloading. Later when the download is completed it will request those files from the client nodes to recompile them.
 
-Client nodes will download the parts they are assigned through threading to create multiple connection and download in parallel acting as different devices on its own. This increase the overall download speed. Increase in the number of client nodes will drastically affect the increase in downloading speed. The methodlogy used is a segmented file transfer and threading.
+Client nodes will download the parts they are assigned through threading to create multiple connections and download in parallel acting as different devices on its own. This increase the overall download speed. Increase in the number of client nodes will drastically affect the increase in downloading speed. The methodology used is a segmented file transfer and threading.
 
 ## Working of Pardow
 
