@@ -141,7 +141,7 @@ def GUI():
     win.bind('<Return>', (lambda event, e=ents: threads(e, output)))
     
     #Run mainloop in Thread
-    thread = threading.Thread(target=win.mainloop, args=())
+    thread = Thread(target=win.mainloop, args=())
     thread.daemon = True                            # Daemonize thread
     thread.start()                                  # Start the execution
 
